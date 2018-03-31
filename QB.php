@@ -2,8 +2,8 @@
 class QB {
 	private $params = [];
 	
-	public function __construct(array $arguments = []) {
-		$this->params['root'] = $this->parse($arguments);
+	public function __construct() {
+		$this->params['root'] = $this->parse(func_get_args());
 	}
 	
 	public function __call(string $name, array $arguments): QB {
