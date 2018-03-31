@@ -14,13 +14,13 @@ $query = (new QB)->select([
 		'p.gender',
 		'p.birthday',
 		'c2.comment_counts',
-		(new QB([
+		(new QB(
 			(new QB)->select([
 					'count(*)'
 				])
 				->from('follows')->as('f')
 				->where('f.follow_user_id = u.id')
-		]))->as('follow_counts')->build()
+		))->as('follow_counts')->build()
 	])
 	->from('users')->as('u')
 	->join('profiles')->as('p')
@@ -34,9 +34,9 @@ $query = (new QB)->select([
 		->group_by('user_id')
 	)->as('c2')
 		->on('c2.user_id = u.id')
-	->where('u.id')->in(new QB([[1, 2, 3, 4, 5]]))
+	->where('u.id')->in(new QB([1, 2, 3, 4, 5]))
 		->or(
-			(new QB(['u.created < now()']))
+			(new QB('u.created < now()'))
 				->and('u.name')->like('"a%"')
 		)
 	->order_by([
@@ -102,15 +102,15 @@ LIMIT
 ```php:insert.php
 $query = (new QB)->insert_into(
 	'users',
-	new QB([[
+	new QB([
 		'id',
 		'name',
 		'created',
-	]]))
+	]))
 	->values([
-		new QB([[1, '"1ban"', '"2018-03-31 10:00:01"']]),
-		new QB([[2, '"2ban"', '"2018-03-31 10:00:02"']]),
-		new QB([[3, '"3ban"', '"2018-03-31 10:00:03"']]),
+		new QB([1, '"1ban"', '"2018-03-31 10:00:01"']),
+		new QB([2, '"2ban"', '"2018-03-31 10:00:02"']),
+		new QB([3, '"3ban"', '"2018-03-31 10:00:03"']),
 	])
 	->build();
 
@@ -200,6 +200,7 @@ WHERE
 * 引数に可変長引数を渡すとスペース区切りで展開される
 * 引数に配列を渡すと`,`区切りで展開される
 * 引数にクエリービルダーを渡すと自動で展開され`()`で囲われる
+* `build()`に連想配列を渡すことで、対象の関数で設定した構文をフィルタリングできる
 * シンタックスチェックしない
 * エスケープしない
 * 文字列は`''` or `""`で囲う必要がある
