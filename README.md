@@ -154,12 +154,54 @@ WHERE
 	id = :id
 ```
 
-# 注意点など
+# ビルドフィルタリング
 
+```php
+<?php
+$conditions = [];
+$query = (new QB)->select([
+		'u.id',
+		'u.name',
+		'u.created',
+	])
+	->from('users')->as('u')
+	->join('profiles')->as('p')
+		->on('p.user_id = u.id')
+	->where('u.deleted = 0')
+		->and('u.name LIKE ":keyword"')
+		->and('p.gender = :gender')
+	->build([
+		'where.and' => isset($conditions['keyword'])
+	]);
+
+echo $query; // SELECT u.id,u.name,u.created FROM users AS u JOIN profiles AS p ON p.user_id = u.id WHERE u.deleted = 0 AND p.gender = :gender
+```
+
+## フォーマット
+
+```sql
+SELECT
+   u.id,
+   u.name,
+   u.created 
+FROM
+   users AS u 
+   JOIN
+      profiles AS p 
+      ON p.user_id = u.id 
+WHERE
+   u.deleted = 0 
+   AND p.gender = :gender
+```
+
+# まとめ
+
+* 関数名は大文字に置換される。また`_`で分解され、最終的にスペースに置換される
+* 引数に可変長引数を渡すとスペース区切りで展開される
+* 引数に配列を渡すと`,`区切りで展開される
+* 引数にクエリービルダーを渡すと自動で展開され`()`で囲われる
 * シンタックスチェックしない
 * エスケープしない
 * 文字列は`''` or `""`で囲う必要がある
-* 引数に配列を渡すとカンマ区切りで展開される
-* 引数にクエリービルダーを渡すと自動で展開され`()`で囲われる
+* バインドは自分でやる(`PDO`とか)
 * `->`,`()`,`''`を書く影響で、ヒアドキュメントよりも記述量が増える
-* バインドは別でやってね(`PDO`とか)
