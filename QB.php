@@ -3,11 +3,11 @@ class QB {
 	private $params = [];
 	
 	public function __construct(array $arguments = []) {
-		$this->params = $this->parse($arguments);
+		$this->params['root'] = $this->parse($arguments);
 	}
 	
 	public function __call(string $name, array $arguments): QB {
-		$this->params = array_merge($this->params, $this->parse(array_merge(array_map('strtoupper', explode('_', $name)), $arguments)));
+		$this->params[$this->calcRoute($name)] = $this->parse(array_merge(array_map('strtoupper', explode('_', $name)), $arguments));
 		return $this;
 	}
 	
@@ -25,7 +25,21 @@ class QB {
 		return $params;
 	}
 	
-	public function build() {
-		return implode(' ', $this->params);
+	public function build($filter = []) {
+		$params = [];
+		foreach ($this->params as $route => $_params) {
+			$active = true;
+			foreach ($filter as $target => $enabled) {
+				$active &= $enabled || preg_match("/{$target}$/", $route) === 0;
+			}
+			if ($active) {
+				$params = array_merge($params, $_params);
+			}
+		}
+		return implode(' ', $params);
+	}
+
+	private function calcRoute($name) {
+		return sprintf('%s.%s', array_keys($this->params)[count($this->params) - 1], $name);
 	}
 }
