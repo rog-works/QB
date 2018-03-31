@@ -1,0 +1,23 @@
+{
+    "name": "rog-works/qb",
+    "description": "simple query builder",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "rog-works",
+            "email": "rog-works@yahoo.co.jp"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {},
+    "require-dev": {
+        "phpunit/phpunit": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "QB\\": "src/",
+            "QBTest\\": "tests/"
+        }
+    }
+}
