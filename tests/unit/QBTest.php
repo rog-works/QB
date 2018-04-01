@@ -29,17 +29,17 @@ class QBTest extends \PHPUnit\Framework\TestCase {
 			[
 				'select',
 				[['u.id', 'u.name', 'u.created']],
-				['root' => [], 'root.select' => ['SELECT', 'u.id,u.name,u.created']]
+				['root' => [], 'root.select' => ['SELECT', 'u.id,u.name,u.created']],
 			],
 			[
 				'left_join',
 				['follows'],
-				['root' => [], 'root.left_join' => ['LEFT', 'JOIN', 'follows']]
+				['root' => [], 'root.left_join' => ['LEFT', 'JOIN', 'follows']],
 			],
 			[
 				'_illegal',
 				[],
-				['root' => [], 'root._illegal' => ['', 'ILLEGAL']]
+				['root' => [], 'root._illegal' => ['', 'ILLEGAL']],
 			],
 		];
 	}
@@ -71,8 +71,13 @@ class QBTest extends \PHPUnit\Framework\TestCase {
 	 * @test
 	 * @dataProvider buildData
 	 */
-	public function build(array $filter, string $expected) {
-		$actual = (new QB)->select([
+	public function build(QB $qb, array $filter, string $expected) {
+
+		$this->assertEquals($expected, $qb->build($filter));
+	}
+
+	public function buildData() {
+		$select = (new QB)->select([
 				'u.id',
 				'u.name',
 				'u.created',
@@ -97,12 +102,7 @@ class QBTest extends \PHPUnit\Framework\TestCase {
 				'p.gender',
 				'u.id desc',
 			])
-			->limit([0, 10])
-			->build($filter);
-		$this->assertEquals($expected, $actual);
-	}
-
-	public function buildData() {
+			->limit([0, 10]);
 		$filtered = implode(' ', [
 			'SELECT u.id,u.name,u.created,f2.follow_counts',
 			'FROM users',
@@ -134,11 +134,37 @@ class QBTest extends \PHPUnit\Framework\TestCase {
 			'ORDER BY p.gender,u.id desc',
 			'LIMIT 0,10',
 		]);
+		$union = (new QB(
+				(new QB)->select('SQL_CALC_FOUND_ROWS', [
+					'id',
+					'"a" AS type',
+					'name'
+				])
+				->from('table_a')
+				->build()
+			))->union_all(
+				(new QB)->select([
+					'id',
+					'"b" AS type',
+					'name'
+				])
+				->from('table_b')
+				->build()
+			)
+			->order_by('id desc')
+			->limit([0, 10]);
+		$unionFull = implode(' ', [
+			'SELECT SQL_CALC_FOUND_ROWS id,"a" AS type,name FROM table_a',
+			'UNION ALL SELECT id,"b" AS type,name FROM table_b',
+			'ORDER BY id desc',
+			'LIMIT 0,10',
+		]);
 		return [
-			[['where.and' => false], $filtered],
-			[['select.from.as.join.as.on.left_join.as.on.where.and' => false], $filtered],
-			[['where.and' => true], $full],
-			[['select.from.as.join.as.on.left_join.as.on.where.and' => true], $full],
+			[$select, ['where.and' => false], $filtered],
+			[$select, ['select.from.as.join.as.on.left_join.as.on.where.and' => false], $filtered],
+			[$select, ['where.and' => true], $full],
+			[$select, ['select.from.as.join.as.on.left_join.as.on.where.and' => true], $full],
+			[$union, [], $unionFull],
 		];
 	}
 
