@@ -8,6 +8,44 @@ use QBTest\helpers\TestHelper;
 class QBTest extends \PHPUnit\Framework\TestCase {
 	/**
 	 * @test
+	 */
+	public function __constructTest() {
+		$this->assertEquals(['root' => ['1,2']], TestHelper::getProperty(new QB([1, 2]), 'params'));
+		$this->assertEquals(['root' => ['hoge', 'fuga']], TestHelper::getProperty(new QB('hoge', 'fuga'), 'params'));
+	}
+
+	/**
+	 * @test
+	 * @dataProvider __callTestData
+	 */
+	public function __callTest(string $name, array $arguments, array $expected) {
+		$qb = new QB;
+		call_user_func_array([$qb, $name], $arguments);
+		$this->assertEquals($expected, TestHelper::getProperty($qb, 'params'));
+	}
+
+	public function __callTestData(): array {
+		return [
+			[
+				'select',
+				[['u.id', 'u.name', 'u.created']],
+				['root' => [], 'root.select' => ['SELECT', 'u.id,u.name,u.created']]
+			],
+			[
+				'left_join',
+				['follows'],
+				['root' => [], 'root.left_join' => ['LEFT', 'JOIN', 'follows']]
+			],
+			[
+				'_illegal',
+				[],
+				['root' => [], 'root._illegal' => ['', 'ILLEGAL']]
+			],
+		];
+	}
+
+	/**
+	 * @test
 	 * @dataProvider parseData
 	 */
 	public function parse(array $args, array $expected) {
@@ -26,6 +64,81 @@ class QBTest extends \PHPUnit\Framework\TestCase {
 			[['in', new QB([1, 2, 3])],['in', '(1,2,3)']],
 			[['order','by', ['p.gender', 'u.id desc']],['order', 'by', 'p.gender,u.id desc']],
 			[['limit', [0, 10]],['limit', '0,10']],
+		];
+	}
+
+	/**
+	 * @test
+	 * @dataProvider buildData
+	 */
+	public function build(array $filter, string $expected) {
+		$actual = (new QB)->select([
+				'u.id',
+				'u.name',
+				'u.created',
+				'f2.follow_counts',
+			])
+			->from('users')->as('u')
+			->join('profiles')->as('p')
+				->on('p.user_id = u.id')
+			->left_join(
+				(new QB)->select([
+					'f.user_id',
+					'count(*) AS follow_counts',
+				])
+				->from('follows')->as('f')
+				->group_by('f.user_id')
+			)->as('f2')
+				->on('f2.user_id = u.id')
+			->where('u.deleted = 0')
+				->and('u.name LIKE "%:keyword%"')
+				->and('p.gender = ":gender"')
+			->order_by([
+				'p.gender',
+				'u.id desc',
+			])
+			->limit([0, 10])
+			->build($filter);
+		$this->assertEquals($expected, $actual);
+	}
+
+	public function buildData() {
+		$filtered = implode(' ', [
+			'SELECT u.id,u.name,u.created,f2.follow_counts',
+			'FROM users',
+			'AS u',
+			'JOIN profiles',
+			'AS p',
+			'ON p.user_id = u.id',
+			'LEFT JOIN (SELECT f.user_id,count(*) AS follow_counts FROM follows AS f GROUP BY f.user_id)',
+			'AS f2',
+			'ON f2.user_id = u.id',
+			'WHERE u.deleted = 0',
+			'AND p.gender = ":gender"',
+			'ORDER BY p.gender,u.id desc',
+			'LIMIT 0,10',
+		]);
+		$full = implode(' ', [
+			'SELECT u.id,u.name,u.created,f2.follow_counts',
+			'FROM users',
+			'AS u',
+			'JOIN profiles',
+			'AS p',
+			'ON p.user_id = u.id',
+			'LEFT JOIN (SELECT f.user_id,count(*) AS follow_counts FROM follows AS f GROUP BY f.user_id)',
+			'AS f2',
+			'ON f2.user_id = u.id',
+			'WHERE u.deleted = 0',
+			'AND u.name LIKE "%:keyword%"',
+			'AND p.gender = ":gender"',
+			'ORDER BY p.gender,u.id desc',
+			'LIMIT 0,10',
+		]);
+		return [
+			[['where.and' => false], $filtered],
+			[['select.from.as.join.as.on.left_join.as.on.where.and' => false], $filtered],
+			[['where.and' => true], $full],
+			[['select.from.as.join.as.on.left_join.as.on.where.and' => true], $full],
 		];
 	}
 
