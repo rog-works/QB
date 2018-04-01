@@ -1,6 +1,8 @@
 QB
 ===
 
+[![Build Status](https://travis-ci.org/rog-works/QB.svg?branch=master)](https://travis-ci.org/rog-works/QB)
+
 # 使い方
 
 ## SELECT
