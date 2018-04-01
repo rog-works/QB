@@ -206,3 +206,30 @@ WHERE
 * 文字列は`''` or `""`で囲う必要がある
 * バインドは自分でやる(`PDO`とか)
 * `->`,`()`,`''`を書く影響で、ヒアドキュメントよりも記述量が増える
+
+# テスト
+
+## 事前作業
+
+```bash
+$ cd /path/to/workspace
+
+# composerインストール
+$ curl -sS https://getcomposer.org/installer | php
+
+# composerに実行権限を付与
+$ mv composer.phar /usr/local/bin/composer
+$ chmod +x /usr/local/bin/composer
+
+# インストール確認
+$ composer -V
+
+# 依存パッケージをインストール
+$ composer install --dev
+```
+
+## テスト実行
+
+```bash
+$ vendor/bin/phpunit
+```
